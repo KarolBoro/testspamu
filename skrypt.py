@@ -40,30 +40,30 @@ def reczne_czyszczenie(tekst):
 df['Message'] = df['Message'].apply(reczne_czyszczenie)
 
 
-print("2. Generowanie wykresow danych...")
-plt.figure(figsize=(8, 6))
-sns.countplot(data=df, x='Category', hue='Category', palette={'ham': '#4C72B0', 'spam': '#DD8452'}, legend=False)
-plt.title('Rozkład klas w zbiorze danych', fontsize=14)
-plt.xlabel('Kategoria', fontsize=12)
-plt.ylabel('Liczba wiadomości', fontsize=12)
-plt.savefig('class_distribution.png', bbox_inches='tight')
-plt.close()
-
-spam_text = " ".join(df[df['Category'] == 'spam']['Message'])
-wordcloud_spam = WordCloud(width=800, height=400, background_color='white', colormap='Reds').generate(spam_text)
-plt.figure(figsize=(10, 5))
-plt.imshow(wordcloud_spam, interpolation='bilinear')
-plt.axis('off')
-plt.savefig('wordcloud_spam.png', bbox_inches='tight')
-plt.close()
-
-ham_text = " ".join(df[df['Category'] == 'ham']['Message'])
-wordcloud_ham = WordCloud(width=800, height=400, background_color='white', colormap='Greens').generate(ham_text)
-plt.figure(figsize=(10, 5))
-plt.imshow(wordcloud_ham, interpolation='bilinear')
-plt.axis('off')
-plt.savefig('wordcloud_ham.png', bbox_inches='tight')
-plt.close()
+# print("2. Generowanie wykresow danych...")
+# plt.figure(figsize=(8, 6))
+# sns.countplot(data=df, x='Category', hue='Category', palette={'ham': '#4C72B0', 'spam': '#DD8452'}, legend=False)
+# plt.title('Rozkład klas w zbiorze danych', fontsize=14)
+# plt.xlabel('Kategoria', fontsize=12)
+# plt.ylabel('Liczba wiadomości', fontsize=12)
+# plt.savefig('class_distribution.png', bbox_inches='tight')
+# plt.close()
+#
+# spam_text = " ".join(df[df['Category'] == 'spam']['Message'])
+# wordcloud_spam = WordCloud(width=800, height=400, background_color='white', colormap='Reds').generate(spam_text)
+# plt.figure(figsize=(10, 5))
+# plt.imshow(wordcloud_spam, interpolation='bilinear')
+# plt.axis('off')
+# plt.savefig('wordcloud_spam.png', bbox_inches='tight')
+# plt.close()
+#
+# ham_text = " ".join(df[df['Category'] == 'ham']['Message'])
+# wordcloud_ham = WordCloud(width=800, height=400, background_color='white', colormap='Greens').generate(ham_text)
+# plt.figure(figsize=(10, 5))
+# plt.imshow(wordcloud_ham, interpolation='bilinear')
+# plt.axis('off')
+# plt.savefig('wordcloud_ham.png', bbox_inches='tight')
+# plt.close()
 
 
 print("3. Przygotowywanie wektoryzacji")
@@ -155,69 +155,69 @@ regresja_tfidf.fit(X_train_tfidf, y_train)
 pred_regresja_tfidf = regresja_tfidf.predict(X_test_tfidf)
 
 
-print("5. Generowanie wykresów z wynikami")
-wyniki = [
-    accuracy_score(y_test, pred_bayes_count),
-    accuracy_score(y_test, pred_bayes_tfidf),
-    accuracy_score(y_test, pred_regresja_count),
-    accuracy_score(y_test, pred_regresja_tfidf)
-]
-
-plt.figure(figsize=(10, 6))
-nazwy_modeli = ['Bayes\n(Count)', 'Bayes\n(TF-IDF)', 'Regresja\n(Count)', 'Regresja\n(TF-IDF)']
-kolory = ['#4C72B0', '#739EDB', '#55A868', '#7BC78C']
-plt.bar(nazwy_modeli, wyniki, color=kolory)
-plt.ylim(0.80, 1.0)
-plt.ylabel('Trafność (Accuracy)')
-plt.title('Porównanie skuteczności (Accuracy)')
-for i, v in enumerate(wyniki):
-    plt.text(i, v + 0.002, f"{v:.4f}", ha='center', fontweight='bold')
-plt.savefig('wykres1_accuracy.png', bbox_inches='tight')
-plt.close()
-
-
-def narysuj_macierz(os, macierz, tytul, kolor):
-    sns.heatmap(macierz, annot=True, fmt='d', cmap=kolor, ax=os, annot_kws={"size": 15}, cbar=False)
-    os.set_title(tytul, fontsize=14, pad=10)
-    os.set_xlabel('Przewidziane przez model', fontsize=11)
-    os.set_ylabel('Prawdziwa kategoria', fontsize=11)
-    os.set_xticklabels(['Ham (0)', 'Spam (1)'])
-    os.set_yticklabels(['Ham (0)', 'Spam (1)'])
+# print("5. Generowanie wykresów z wynikami")
+# wyniki = [
+#     accuracy_score(y_test, pred_bayes_count),
+#     accuracy_score(y_test, pred_bayes_tfidf),
+#     accuracy_score(y_test, pred_regresja_count),
+#     accuracy_score(y_test, pred_regresja_tfidf)
+# ]
+#
+# plt.figure(figsize=(10, 6))
+# nazwy_modeli = ['Bayes\n(Count)', 'Bayes\n(TF-IDF)', 'Regresja\n(Count)', 'Regresja\n(TF-IDF)']
+# kolory = ['#4C72B0', '#739EDB', '#55A868', '#7BC78C']
+# plt.bar(nazwy_modeli, wyniki, color=kolory)
+# plt.ylim(0.80, 1.0)
+# plt.ylabel('Trafność (Accuracy)')
+# plt.title('Porównanie skuteczności (Accuracy)')
+# for i, v in enumerate(wyniki):
+#     plt.text(i, v + 0.002, f"{v:.4f}", ha='center', fontweight='bold')
+# plt.savefig('wykres1_accuracy.png', bbox_inches='tight')
+# plt.close()
 
 
-fig, ax = plt.subplots(1, 2, figsize=(14, 6))
-narysuj_macierz(ax[0], confusion_matrix(y_test, pred_bayes_count), 'Bayes - Zwykłe zliczanie', 'Blues')
-narysuj_macierz(ax[1], confusion_matrix(y_test, pred_bayes_tfidf), 'Bayes - TF-IDF', 'Blues')
-plt.savefig('macierze_bayes.png', bbox_inches='tight')
-plt.close()
-
-fig, ax = plt.subplots(1, 2, figsize=(14, 6))
-narysuj_macierz(ax[0], confusion_matrix(y_test, pred_regresja_count), 'Regresja - Zwykłe zliczanie', 'Greens')
-narysuj_macierz(ax[1], confusion_matrix(y_test, pred_regresja_tfidf), 'Regresja - TF-IDF', 'Greens')
-plt.savefig('macierze_regresja.png', bbox_inches='tight')
-plt.close()
-
-lr_eksperyment = 1.0
-
-reg_1k = regresja(learning_rate=lr_eksperyment, epoki=1000)
-reg_1k.fit(X_train_tfidf, y_train)
-cm_1k = confusion_matrix(y_test, reg_1k.predict(X_test_tfidf))
-
-reg_3k = regresja(learning_rate=lr_eksperyment, epoki=3000)
-reg_3k.fit(X_train_tfidf, y_train)
-cm_3k = confusion_matrix(y_test, reg_3k.predict(X_test_tfidf))
-
-reg_5k = regresja(learning_rate=lr_eksperyment, epoki=5000)
-reg_5k.fit(X_train_tfidf, y_train)
-cm_5k = confusion_matrix(y_test, reg_5k.predict(X_test_tfidf))
-
-fig, ax = plt.subplots(1, 3, figsize=(18, 5))
-narysuj_macierz(ax[0], cm_1k, '1000 epok (Niedouczenie)', 'Reds')
-narysuj_macierz(ax[1], cm_3k, '3000 epok (Widoczna poprawa)', 'Oranges')
-narysuj_macierz(ax[2], cm_5k, '5000 epok (Optymalna wydajność)', 'Greens')
-plt.savefig('ewolucja_epok.png', bbox_inches='tight')
-plt.close()
-print("Wygenerowano plik ewolucja_epok.png")
+# def narysuj_macierz(os, macierz, tytul, kolor):
+#     sns.heatmap(macierz, annot=True, fmt='d', cmap=kolor, ax=os, annot_kws={"size": 15}, cbar=False)
+#     os.set_title(tytul, fontsize=14, pad=10)
+#     os.set_xlabel('Przewidziane przez model', fontsize=11)
+#     os.set_ylabel('Prawdziwa kategoria', fontsize=11)
+#     os.set_xticklabels(['Ham (0)', 'Spam (1)'])
+#     os.set_yticklabels(['Ham (0)', 'Spam (1)'])
+#
+#
+# fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+# narysuj_macierz(ax[0], confusion_matrix(y_test, pred_bayes_count), 'Bayes - Zwykłe zliczanie', 'Blues')
+# narysuj_macierz(ax[1], confusion_matrix(y_test, pred_bayes_tfidf), 'Bayes - TF-IDF', 'Blues')
+# plt.savefig('macierze_bayes.png', bbox_inches='tight')
+# plt.close()
+#
+# fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+# narysuj_macierz(ax[0], confusion_matrix(y_test, pred_regresja_count), 'Regresja - Zwykłe zliczanie', 'Greens')
+# narysuj_macierz(ax[1], confusion_matrix(y_test, pred_regresja_tfidf), 'Regresja - TF-IDF', 'Greens')
+# plt.savefig('macierze_regresja.png', bbox_inches='tight')
+# plt.close()
+#
+# lr_eksperyment = 1.0
+#
+# reg_1k = regresja(learning_rate=lr_eksperyment, epoki=1000)
+# reg_1k.fit(X_train_tfidf, y_train)
+# cm_1k = confusion_matrix(y_test, reg_1k.predict(X_test_tfidf))
+#
+# reg_3k = regresja(learning_rate=lr_eksperyment, epoki=3000)
+# reg_3k.fit(X_train_tfidf, y_train)
+# cm_3k = confusion_matrix(y_test, reg_3k.predict(X_test_tfidf))
+#
+# reg_5k = regresja(learning_rate=lr_eksperyment, epoki=5000)
+# reg_5k.fit(X_train_tfidf, y_train)
+# cm_5k = confusion_matrix(y_test, reg_5k.predict(X_test_tfidf))
+#
+# fig, ax = plt.subplots(1, 3, figsize=(18, 5))
+# narysuj_macierz(ax[0], cm_1k, '1000 epok (Niedouczenie)', 'Reds')
+# narysuj_macierz(ax[1], cm_3k, '3000 epok (Widoczna poprawa)', 'Oranges')
+# narysuj_macierz(ax[2], cm_5k, '5000 epok (Optymalna wydajność)', 'Greens')
+# plt.savefig('ewolucja_epok.png', bbox_inches='tight')
+# plt.close()
+# print("Wygenerowano plik ewolucja_epok.png")
 
 print("\nGOTOWE!")
 
