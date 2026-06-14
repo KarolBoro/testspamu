@@ -2,7 +2,11 @@ import streamlit as st
 import pickle
 import numpy as np
 import csv
+import pandas as pd
 import os
+import io
+
+st.set_page_config(page_title="Anty-Spam", page_icon="🛡️", layout="wide")
 
 
 class WlasnyNaiwnyBayes:
@@ -48,6 +52,7 @@ class WlasnyNaiwnyBayes:
 
         return exp_post / np.sum(exp_post)
 
+
 def reczne_czyszczenie(tekst, stop_words):
     oczyszczony = ""
     for znak in str(tekst):
@@ -72,80 +77,156 @@ def load_model():
 
 
 model, vectorizer, stop_words = load_model()
+sciezka_csv = "C:\\Users\\karol\\Downloads\\email.csv"
 
 
 def zapisz_do_bazy(tekst, prawdziwa_kategoria):
-    sciezka_csv = "C:\\Users\\karol\\Downloads\\email.csv"
+    czysty_tekst = str(tekst).replace('\n', ' ').replace('\r', '')
     with open(sciezka_csv, 'a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
-        writer.writerow([prawdziwa_kategoria, tekst])
+        writer.writerow([prawdziwa_kategoria, czysty_tekst])
 
 
-st.set_page_config(page_title="Anty-Spam 2.0", page_icon="🛡️")
+with st.sidebar:
+    st.header("📊 Statystyki bazy danych")
 
-st.title("🛡️ System Wykrywania Spamu 2.0")
-st.subheader("Oparty na autorskim algorytmie Naiwnego Bayesa")
+    if os.path.exists(sciezka_csv):
+        try:
+            df_stats = pd.read_csv(sciezka_csv, sep=',', on_bad_lines='skip')
+            df_stats = df_stats.dropna(subset=['Category'])
+            df_stats['Category'] = df_stats['Category'].str.lower().str.strip()
 
-if 'sprawdzone' not in st.session_state:
-    st.session_state.sprawdzone = False
-    st.session_state.ostatni_tekst = ""
-    st.session_state.ostatnia_predykcja = None
-    st.session_state.ostatnia_pewnosc = 0.0
-    st.session_state.opinia_zapisana = False
+            razem = len(df_stats)
+            ham_count = len(df_stats[df_stats['Category'] == 'ham'])
+            spam_count = len(df_stats[df_stats['Category'] == 'spam'])
 
-user_input = st.text_area("Treść wiadomości:", placeholder="Np. Gratulacje! Wygrałeś iPhone...")
+            st.metric("Wszystkie wiadomości", razem)
+            col_b1, col_b2 = st.columns(2)
+            col_b1.metric("HAM", ham_count)
+            col_b2.metric("SPAM", spam_count)
 
-if st.button("Sprawdź wiadomość"):
-    if user_input.strip() == "":
-        st.warning("Proszę wpisać jakąś treść.")
+            st.divider()
+            st.subheader("📈 Rozkład procentowy")
+            if razem > 0:
+                procent_spam = (spam_count / razem) * 100
+                st.write(f"Udział SPAMu w bazie: **{procent_spam:.1f}%**")
+                st.progress(procent_spam / 100)
+
+        except Exception as e:
+            st.error("Nie udało się załadować statystyk.")
     else:
-        cleaned_text = reczne_czyszczenie(user_input, stop_words)
-        vectorized_text = vectorizer.transform([cleaned_text]).toarray()
+        st.warning("Nie znaleziono pliku bazy danych email.csv")
 
-        # POBIERAMY WERDYKT I PROCENTY
-        prediction = model.predict(vectorized_text)[0]
-        probabilities = model.predict_proba(vectorized_text)[0]
-        confidence = probabilities[prediction] * 100  # Wyciągamy procent dla wygranej klasy
+st.title("🛡️ System Wykrywania Spamu")
+st.subheader(
+    "Oparty na autorskim algorytmie Naiwnego Bayesa, Algorytm został wyszkolony na danych z serwisu Kaggle. Dane te były w języku angielskim, więc aby algorytm miał realne szanse ocenę spamu proszę również wpisywać wiadomości w tym języku.")
 
-        st.session_state.sprawdzone = True
-        st.session_state.ostatni_tekst = user_input
-        st.session_state.ostatnia_predykcja = prediction
-        st.session_state.ostatnia_pewnosc = confidence
+tab1, tab2 = st.tabs(["✉️ Sprawdź pojedynczą wiadomość", "📁 Przetwarzanie masowe (Pliki CSV)"])
+
+
+with tab1:
+    if 'sprawdzone' not in st.session_state:
+        st.session_state.sprawdzone = False
+        st.session_state.ostatni_tekst = ""
+        st.session_state.ostatnia_predykcja = None
+        st.session_state.ostatnia_pewnosc = 0.0
         st.session_state.opinia_zapisana = False
 
-if st.session_state.sprawdzone:
-    st.divider()
+    user_input = st.text_area("Treść wiadomości:", placeholder="Np. Congratulations! you have won a prize! etc")
 
-    # Wyświetlanie wyniku z uwzględnieniem PEWNOŚCI MODELU
-    if st.session_state.ostatnia_predykcja == 1:
-        st.error(
-            f"🚨 UWAGA: Ta wiadomość została zaklasyfikowana jako SPAM! (Pewność: {st.session_state.ostatnia_pewnosc:.2f}%)")
-        # Pasek postępu (czerwony/pomarańczowy wizualnie w Streamlicie przy błędzie)
-        st.progress(st.session_state.ostatnia_pewnosc / 100)
-    else:
-        st.success(f"✅ To jest bezpieczna wiadomość (HAM). (Pewność: {st.session_state.ostatnia_pewnosc:.2f}%)")
-        st.progress(st.session_state.ostatnia_pewnosc / 100)
+    if st.button("Sprawdź wiadomość"):
+        if user_input.strip() == "":
+            st.warning("Proszę wpisać jakąś treść.")
+        else:
+            cleaned_text = reczne_czyszczenie(user_input, stop_words)
+            vectorized_text = vectorizer.transform([cleaned_text]).toarray()
 
-    # System opinii
-    if not st.session_state.opinia_zapisana:
-        st.write("**Czy algorytm ocenił wiadomość poprawnie?**")
-        col1, col2 = st.columns(2)
+            prediction = model.predict(vectorized_text)[0]
+            probabilities = model.predict_proba(vectorized_text)[0]
+            confidence = probabilities[prediction] * 100
 
-        with col1:
-            if st.button("👍 Tak, ocena jest trafna"):
-                kategoria = 'spam' if st.session_state.ostatnia_predykcja == 1 else 'ham'
-                zapisz_do_bazy(st.session_state.ostatni_tekst, kategoria)
-                st.session_state.opinia_zapisana = True
-                st.rerun()
+            st.session_state.sprawdzone = True
+            st.session_state.ostatni_tekst = user_input
+            st.session_state.ostatnia_predykcja = prediction
+            st.session_state.ostatnia_pewnosc = confidence
+            st.session_state.opinia_zapisana = False
 
-        with col2:
-            if st.button("👎 Nie, to pomyłka algorytmu"):
-                kategoria = 'ham' if st.session_state.ostatnia_predykcja == 1 else 'spam'
-                zapisz_do_bazy(st.session_state.ostatni_tekst, kategoria)
-                st.session_state.opinia_zapisana = True
-                st.rerun()
-    else:
-        st.info("Dziękujemy! Twoja wiadomość została dopisana do bazy danych.")
+    if st.session_state.sprawdzone:
+        st.divider()
+
+        if st.session_state.ostatnia_predykcja == 1:
+            st.error(
+                f"🚨 UWAGA: Ta wiadomość została zaklasyfikowana jako SPAM! (Pewność: {st.session_state.ostatnia_pewnosc:.2f}%)")
+            st.progress(st.session_state.ostatnia_pewnosc / 100)
+        else:
+            st.success(f"✅ To jest bezpieczna wiadomość (HAM). (Pewność: {st.session_state.ostatnia_pewnosc:.2f}%)")
+            st.progress(st.session_state.ostatnia_pewnosc / 100)
+
+        if not st.session_state.opinia_zapisana:
+            st.write("**Czy algorytm ocenił wiadomość poprawnie?**")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                if st.button("👍 Tak, ocena jest trafna"):
+                    kategoria = 'spam' if st.session_state.ostatnia_predykcja == 1 else 'ham'
+                    zapisz_do_bazy(st.session_state.ostatni_tekst, kategoria)
+                    st.session_state.opinia_zapisana = True
+                    st.rerun()
+
+            with col2:
+                if st.button("👎 Nie, to pomyłka algorytmu"):
+                    kategoria = 'ham' if st.session_state.ostatnia_predykcja == 1 else 'spam'
+                    zapisz_do_bazy(st.session_state.ostatni_tekst, kategoria)
+                    st.session_state.opinia_zapisana = True
+                    st.rerun()
+        else:
+            st.info("Dziękujemy! Twoja wiadomość została dopisana do bazy danych.")
+
+with tab2:
+    st.write(
+        "Wgraj plik `.csv` zawierający kolumnę z tekstami wiadomości w języku angielskim. System masowo przeanalizuje plik i doda kolumny z werdyktami.")
+
+    wgrany_plik = st.file_uploader("Wybierz plik CSV do analizy", type=['csv'])
+
+    if wgrany_plik is not None:
+        try:
+            df_batch = pd.read_csv(wgrany_plik, on_bad_lines='skip')
+
+            kolumna_tekstowa = st.selectbox("Wskaż kolumnę zawierającą treść wiadomości:", df_batch.columns)
+
+            if st.button("🚀 Rozpocznij analizę masową", key="btn_masowa"):
+                with st.spinner('Trwa przetwarzanie danych (NLP & Operacje macierzowe)...'):
+                    df_batch = df_batch.dropna(subset=[kolumna_tekstowa])
+
+                    czyste_teksty = df_batch[kolumna_tekstowa].astype(str).apply(
+                        lambda x: reczne_czyszczenie(x, stop_words))
+
+                    macierz_batch = vectorizer.transform(czyste_teksty).toarray()
+
+                    predykcje = model.predict(macierz_batch)
+                    prawdopodobienstwa = model.predict_proba(macierz_batch)
+
+                    pewnosci = [prob[pred] * 100 for prob, pred in zip(prawdopodobienstwa, predykcje)]
+
+                    df_batch['Werdykt_AI'] = ['SPAM' if p == 1 else 'HAM' for p in predykcje]
+                    df_batch['Pewność_Algorytmu(%)'] = [round(c, 2) for c in pewnosci]
+
+                st.success(f"Ukończono! Pomyślnie przeanalizowano {len(df_batch)} wierszy.")
+
+                st.write("Podgląd pierwszych wyników:")
+                st.dataframe(df_batch.head())
+
+                csv_buffer = df_batch.to_csv(index=False).encode('utf-8')
+
+                st.download_button(
+                    label="💾 Pobierz przeanalizowany plik CSV",
+                    data=csv_buffer,
+                    file_name='wyniki_analizy_antyspam.csv',
+                    mime='text/csv',
+                )
+
+        except Exception as e:
+            st.error("Wystąpił błąd podczas odczytu pliku. Upewnij się, że struktura pliku CSV jest poprawna.")
 
 st.divider()
 st.caption("Autorzy: Karol Borowski")
