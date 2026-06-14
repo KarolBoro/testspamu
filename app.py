@@ -66,9 +66,9 @@ def zapisz_do_bazy(tekst, prawdziwa_kategoria):
         writer.writerow([prawdziwa_kategoria, tekst])
 
 
-st.set_page_config(page_title="Anty-Spam 2.0", page_icon="🛡️")
+st.set_page_config(page_title="Anty-Spam", page_icon="🛡️")
 
-st.title("🛡️ System Wykrywania Spamu 2.0")
+st.title("🛡️ System Wykrywania Spamu")
 st.subheader("Oparty na autorskim algorytmie Naiwnego Bayesa")
 st.write("Wpisz treść wiadomości poniżej, a nasz algorytm sprawdzi, czy jest bezpieczna. Algorytm był uczony na anglojęzycznej bazie danych więc email do sprawdzenia również musi być w takim języku.")
 
@@ -78,7 +78,7 @@ if 'sprawdzone' not in st.session_state:
     st.session_state.ostatnia_predykcja = None
     st.session_state.opinia_zapisana = False
 
-user_input = st.text_area("Treść wiadomości:", placeholder="Np. Gratulacje! Wygrałeś iPhone...")
+user_input = st.text_area("Treść wiadomości:", placeholder="Np. Congratulations!, Free money etc")
 
 if st.button("Sprawdź wiadomość"):
     if user_input.strip() == "":
