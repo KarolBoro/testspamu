@@ -9,8 +9,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 import pickle
 
 print("1. Wczytywanie i czyszczenie danych")
-df = pd.read_csv("C:\\Users\\karol\\Downloads\\email.csv")
-
+df = pd.read_csv("C:\\Users\\karol\\Downloads\\email.csv", sep=',', on_bad_lines='skip')
 df = df.dropna(subset=['Category', 'Message'])
 df = df[df['Category'].isin(['ham', 'spam'])]
 df['Spam'] = df['Category'].apply(lambda x: 1 if x == 'spam' else 0)
@@ -81,7 +80,7 @@ X_test_tfidf = vectorizer_tfidf.transform(X_test).toarray()
 
 
 
-class  WlasnyNaiwnyBayes:
+class WlasnyNaiwnyBayes:
     def fit(self, X, y):
         liczba_probek, liczba_cech = X.shape
         self.klasy = np.unique(y)
@@ -106,6 +105,23 @@ class  WlasnyNaiwnyBayes:
             posterior = prior + np.sum(prawd_slow * x)
             posteriory.append(posterior)
         return self.klasy[np.argmax(posteriory)]
+
+    def predict_proba(self, X):
+        return np.array([self._predict_proba_single(x) for x in X])
+
+    def _predict_proba_single(self, x):
+        posteriory = []
+        for klasa in self.klasy:
+            prior = np.log(self.priors[klasa])
+            prawd_slow = np.log(self.zliczenia_slow[klasa, :] / self.suma_slow_klasy[klasa])
+            posterior = prior + np.sum(prawd_slow * x)
+            posteriory.append(posterior)
+
+        posteriory = np.array(posteriory)
+        max_post = np.max(posteriory)
+        exp_post = np.exp(posteriory - max_post)
+
+        return exp_post / np.sum(exp_post)
 
 
 class regresja:
