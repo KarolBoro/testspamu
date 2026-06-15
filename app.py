@@ -87,6 +87,33 @@ def zapisz_do_bazy(tekst, prawdziwa_kategoria):
         writer.writerow([prawdziwa_kategoria, czysty_tekst])
 
 
+
+def przetrenuj_model():
+    try:
+        df = pd.read_csv(sciezka_csv, sep=',', on_bad_lines='skip')
+        df = df.dropna(subset=['Category', 'Message'])
+        df['Category'] = df['Category'].str.lower().str.strip()
+        df = df[df['Category'].isin(['ham', 'spam'])]
+        df['Spam'] = df['Category'].apply(lambda x: 1 if x == 'spam' else 0)
+
+        czyste_teksty = df['Message'].astype(str).apply(lambda x: reczne_czyszczenie(x, stop_words))
+        X_nowe = vectorizer.fit_transform(czyste_teksty).toarray()
+        y_nowe = df['Spam'].values
+
+        nowy_model = WlasnyNaiwnyBayes()
+        nowy_model.fit(X_nowe, y_nowe)
+
+        with open('model_bayes.pkl', 'wb') as f:
+            pickle.dump(nowy_model, f)
+        with open('vectorizer.pkl', 'wb') as f:
+            pickle.dump(vectorizer, f)
+
+        st.cache_resource.clear()
+        return True, len(df)
+    except Exception as e:
+        return False, str(e)
+
+
 with st.sidebar:
     st.header("📊 Statystyki bazy danych")
 
@@ -117,6 +144,18 @@ with st.sidebar:
     else:
         st.warning("Nie znaleziono pliku bazy danych email.csv")
 
+
+    st.divider()
+    with st.expander("⚙️ Panel Administratora"):
+        st.write("Wymuś aktualizację wagi słów w modelu na podstawie najnowszych wpisów z bazy danych.")
+        if st.button("🧠 Przetrenuj model"):
+            with st.spinner("Trwa analiza i przebudowa macierzy..."):
+                sukces, info = przetrenuj_model()
+                if sukces:
+                    st.success(f"Sukces! Model odświeżony i wyuczony na {info} wiadomościach.")
+                else:
+                    st.error(f"Błąd trenowania: {info}")
+
 st.title("🛡️ System Wykrywania Spamu")
 st.subheader(
     "Oparty na autorskim algorytmie Naiwnego Bayesa, Algorytm został wyszkolony na danych z serwisu Kaggle. Dane te były w języku angielskim, więc aby algorytm miał realne szanse ocenę spamu proszę również wpisywać wiadomości w tym języku.")
@@ -138,6 +177,8 @@ with tab1:
         if user_input.strip() == "":
             st.warning("Proszę wpisać jakąś treść.")
         else:
+            model, vectorizer, stop_words = load_model()
+
             cleaned_text = reczne_czyszczenie(user_input, stop_words)
             vectorized_text = vectorizer.transform([cleaned_text]).toarray()
 
@@ -191,33 +232,29 @@ with tab2:
     if wgrany_plik is not None:
         try:
             df_batch = pd.read_csv(wgrany_plik, on_bad_lines='skip')
-
             kolumna_tekstowa = st.selectbox("Wskaż kolumnę zawierającą treść wiadomości:", df_batch.columns)
 
             if st.button("🚀 Rozpocznij analizę masową", key="btn_masowa"):
                 with st.spinner('Trwa przetwarzanie danych (NLP & Operacje macierzowe)...'):
-                    df_batch = df_batch.dropna(subset=[kolumna_tekstowa])
+                    model, vectorizer, stop_words = load_model()
 
+                    df_batch = df_batch.dropna(subset=[kolumna_tekstowa])
                     czyste_teksty = df_batch[kolumna_tekstowa].astype(str).apply(
                         lambda x: reczne_czyszczenie(x, stop_words))
-
                     macierz_batch = vectorizer.transform(czyste_teksty).toarray()
 
                     predykcje = model.predict(macierz_batch)
                     prawdopodobienstwa = model.predict_proba(macierz_batch)
-
                     pewnosci = [prob[pred] * 100 for prob, pred in zip(prawdopodobienstwa, predykcje)]
 
                     df_batch['Werdykt_AI'] = ['SPAM' if p == 1 else 'HAM' for p in predykcje]
                     df_batch['Pewność_Algorytmu(%)'] = [round(c, 2) for c in pewnosci]
 
                 st.success(f"Ukończono! Pomyślnie przeanalizowano {len(df_batch)} wierszy.")
-
                 st.write("Podgląd pierwszych wyników:")
                 st.dataframe(df_batch.head())
 
                 csv_buffer = df_batch.to_csv(index=False).encode('utf-8')
-
                 st.download_button(
                     label="💾 Pobierz przeanalizowany plik CSV",
                     data=csv_buffer,
