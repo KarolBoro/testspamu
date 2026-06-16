@@ -77,7 +77,7 @@ def load_model():
 
 
 model, vectorizer, stop_words = load_model()
-sciezka_csv = "C:\\Users\\karol\\Downloads\\email.csv"
+sciezka_csv = "C:\\Users\\karol\\PycharmProjects\\testspamu\\email_polski.csv"
 
 
 def zapisz_do_bazy(tekst, prawdziwa_kategoria):
@@ -142,7 +142,7 @@ with st.sidebar:
         except Exception as e:
             st.error("Nie udało się załadować statystyk.")
     else:
-        st.warning("Nie znaleziono pliku bazy danych email.csv")
+        st.warning("Nie znaleziono pliku bazy danych email_polski.csv")
 
 
     st.divider()
@@ -158,7 +158,7 @@ with st.sidebar:
 
 st.title("🛡️ System Wykrywania Spamu")
 st.subheader(
-    "Oparty na autorskim algorytmie Naiwnego Bayesa, Algorytm został wyszkolony na danych z serwisu Kaggle. Dane te były w języku angielskim, więc aby algorytm miał realne szanse ocenę spamu proszę również wpisywać wiadomości w tym języku.")
+    "Oparty na autorskim algorytmie Naiwnego Bayesa, Algorytm został domyślnie wyszkolony na danych z serwisu Kaggle. Natomiast stwierdziłem, że lepszym pomysłem jest baza danych w języku polskim, więc musiałem wygenerować takową. Jest ona zamieszczona również na Githubie ma ona w sobie ponad 50 000 insertów. ")
 
 tab1, tab2 = st.tabs(["✉️ Sprawdź pojedynczą wiadomość", "📁 Przetwarzanie masowe (Pliki CSV)"])
 
@@ -171,7 +171,7 @@ with tab1:
         st.session_state.ostatnia_pewnosc = 0.0
         st.session_state.opinia_zapisana = False
 
-    user_input = st.text_area("Treść wiadomości:", placeholder="Np. Congratulations! you have won a prize! etc")
+    user_input = st.text_area("Treść wiadomości:", placeholder="Np. Gratulacje użytkowniku! Wygrałeś darmowego Iphone 13 Pro Max!")
 
     if st.button("Sprawdź wiadomość"):
         if user_input.strip() == "":
@@ -225,7 +225,7 @@ with tab1:
 
 with tab2:
     st.write(
-        "Wgraj plik `.csv` zawierający kolumnę z tekstami wiadomości w języku angielskim. System masowo przeanalizuje plik i doda kolumny z werdyktami.")
+        "Wgraj plik `.csv` zawierający kolumnę z tekstami wiadomości w języku polskim. System masowo przeanalizuje plik i doda kolumny z werdyktami.")
 
     wgrany_plik = st.file_uploader("Wybierz plik CSV do analizy", type=['csv'])
 

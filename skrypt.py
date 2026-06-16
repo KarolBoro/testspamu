@@ -9,18 +9,17 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 import pickle
 
 print("1. Wczytywanie i czyszczenie danych")
-df = pd.read_csv("C:\\Users\\karol\\Downloads\\email.csv", sep=',', on_bad_lines='skip')
+df = pd.read_csv("C:\\Users\\karol\\PycharmProjects\\testspamu\\email_polski.csv", sep=',', on_bad_lines='skip')
 df = df.dropna(subset=['Category', 'Message'])
 df = df[df['Category'].isin(['ham', 'spam'])]
 df['Spam'] = df['Category'].apply(lambda x: 1 if x == 'spam' else 0)
 
 
-moje_stop_words = {'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his',
-                   'she', 'her', 'it', 'they', 'them', 'what', 'which', 'who', 'this',
-                   'that', 'am', 'is', 'are', 'was', 'were', 'be', 'have', 'has', 'had',
-                   'do', 'does', 'did', 'a', 'an', 'the', 'and', 'but', 'if', 'or',
-                   'because', 'as', 'of', 'at', 'by', 'for', 'with', 'about', 'to',
-                   'from', 'in', 'out', 'on', 'off'}
+moje_stop_words = {'i', 'w', 'na', 'z', 'do', 'nie', 'że', 'o', 'to', 'jak', 'jest',
+                   'a', 'ale', 'co', 'się', 'od', 'za', 'po', 'jako', 'dla', 'czy',
+                   'ja', 'ty', 'on', 'ona', 'ono', 'my', 'wy', 'oni', 'one', 'też',
+                   'mi', 'ci', 'mu', 'jej', 'nas', 'was', 'ich', 'tym', 'ten', 'ta',
+                   'tego', 'tej', 'tak', 'być', 'będzie', 'ma', 'mam', 'masz'}
 
 
 def reczne_czyszczenie(tekst):
